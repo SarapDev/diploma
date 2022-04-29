@@ -10,4 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 final class Classes extends Model
 {
     use HasFactory;
+
+    protected $table = 'classes';
+
+    protected $fillable = ['title', 'from', 'to', 'day_of_the_week'];
 }

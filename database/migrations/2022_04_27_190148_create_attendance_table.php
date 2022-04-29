@@ -16,7 +16,7 @@ return new class extends Migration
             $table->dateTime('leave_time');
 
             $table->foreign('class_id')->references('id')->on('classes');
-            $table->foreign('student_id')->references('id')->on('students');
+            $table->foreign('student_id')->references('id')->on('users');
         });
     }
 

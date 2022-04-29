@@ -11,8 +11,11 @@ return new class extends Migration
         Schema::create('tests', function (Blueprint $table) {
             $table->id();
             $table->integer('class_id');
+            $table->integer('teacher_id');
 
-            $table->foreign('class_id')->references('id')->on('classes');        });
+            $table->foreign('class_id')->references('id')->on('classes');
+            $table->foreign('teacher_id')->references('id')->on('users');
+        });
     }
 
     public function down(): void

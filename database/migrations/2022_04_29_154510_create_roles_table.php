@@ -2,23 +2,30 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('classes', function (Blueprint $table) {
+        Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->string('day_of_the_week');
-            $table->dateTime('from');
-            $table->dateTime('to');
         });
+
+        DB::table('roles')->insert([
+            [
+                'title' => 'Teachers',
+            ],
+            [
+                'title' => 'Students'
+            ]
+        ]);
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('classes');
+        Schema::dropIfExists('roles');
     }
 };
