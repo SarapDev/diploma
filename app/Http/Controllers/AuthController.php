@@ -1,14 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Services\TokenCache;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
+use Microsoft\Graph\Graph;
+use Microsoft\Graph\Model;
 
-class AuthController extends Controller
+final class AuthController extends Controller
 {
-    public function signin()
+    public function signin(): RedirectResponse
     {
         // Initialize the OAuth client
         $oauthClient = new GenericProvider([
@@ -30,7 +38,7 @@ class AuthController extends Controller
         return redirect()->away($authUrl);
     }
 
-    public function callback(Request $request)
+    public function callback(Request $request): Redirector|RedirectResponse|Application
     {
         // Validate state
         $expectedState = session('oauthState');
@@ -69,10 +77,17 @@ class AuthController extends Controller
                     'code' => $authCode
                 ]);
 
-                // TEMPORARY FOR TESTING!
-                return redirect('/')
-                    ->with('error', 'Access token received')
-                    ->with('errorDetail', $accessToken->getToken());
+                $graph = new Graph();
+                $graph->setAccessToken($accessToken->getToken());
+
+                $user = $graph->createRequest('GET', '/me?$select=displayName,mail,mailboxSettings,userPrincipalName')
+                    ->setReturnType(Model\User::class)
+                    ->execute();
+
+                $tokenCache = new TokenCache();
+                $tokenCache->storeTokens($accessToken, $user);
+
+                return redirect('/');
             }
             catch (IdentityProviderException $e) {
                 return redirect('/')
@@ -84,5 +99,12 @@ class AuthController extends Controller
         return redirect('/')
             ->with('error', $request->query('error'))
             ->with('errorDetail', $request->query('error_description'));
+    }
+
+    public function signout(): Redirector|Application|RedirectResponse
+    {
+        $tokenCache = new TokenCache();
+        $tokenCache->clearTokens();
+        return redirect('/');
     }
 }
