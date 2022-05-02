@@ -1,15 +1,16 @@
 <?php
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
+
+declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 
-class HomeController extends Controller
+final class HomeController extends Controller
 {
-    public function welcome()
+    public function welcome(): Factory|View|Application
     {
         $viewData = $this->loadViewData();
 

@@ -14,7 +14,7 @@ final class AttendanceController extends Controller
 {
     public function __construct(
         public AttendanceHandler $attendanceHandler,
-        public AttendanceRecordHandler $recordHandler
+        public AttendanceRecordHandler $recordHandler,
     ) {
     }
 
@@ -25,6 +25,7 @@ final class AttendanceController extends Controller
 
     public function report(string $event_id): Factory|View|Application
     {
-        return view('report', array_merge(['users' => $this->recordHandler->handle($event_id)], $this->loadViewData()));
+        return view('report', array_merge(['eventReports' => $this->recordHandler->handle($event_id)], $this->loadViewData()));
     }
+
 }
