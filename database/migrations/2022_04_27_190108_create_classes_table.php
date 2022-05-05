@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->string('day_of_the_week');
             $table->dateTime('from');
             $table->dateTime('to');
         });

@@ -6,21 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
-        Schema::create('attendance', function (Blueprint $table) {
-            $table->id();
-            $table->integer('class_id');
+        Schema::create('student_class', function (Blueprint $table) {
             $table->integer('student_id');
-            $table->dateTime('join_time');
-            $table->dateTime('leave_time');
+            $table->integer('class_id');
 
+            $table->foreign('student_id')->references('id')->on('students');
             $table->foreign('class_id')->references('id')->on('classes');
         });
     }
 
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('attendance');
+        Schema::dropIfExists('student_class');
     }
 };
