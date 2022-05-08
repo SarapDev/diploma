@@ -62,6 +62,8 @@ return [
             'driver' => 'null',
         ],
 
+        'rabbitmq' => [
+            'driver' => 'rabbitmq',
+        ],
     ],
-
 ];

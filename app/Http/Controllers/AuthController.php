@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Events\UserAuthEvent;
 use App\Services\TokenCache;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
@@ -86,6 +87,8 @@ final class AuthController extends Controller
 
                 $tokenCache = new TokenCache();
                 $tokenCache->storeTokens($accessToken, $user);
+
+                UserAuthEvent::dispatch(['user' => $user]);
 
                 return redirect('/');
             }
