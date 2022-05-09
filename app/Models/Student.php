@@ -7,11 +7,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-final class Classes extends Model
+final class Student extends Model
 {
     use HasFactory;
 
-    protected $table = 'classes';
+    public $timestamps = false;
 
-    protected $fillable = ['event_id', 'title', 'from', 'to'];
+    protected $table = 'students';
+
+    protected $fillable = ['fullname'];
 }

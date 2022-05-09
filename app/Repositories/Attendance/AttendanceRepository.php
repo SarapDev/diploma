@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace app\Repositories;
+namespace App\Repositories\Attendance;
 
 use App\Models\Attendance;
 
-final class AttendanceRepository
+final class AttendanceRepository implements IAttendanceRepository
 {
     public function butchCreate(array $attendance): void
     {

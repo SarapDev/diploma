@@ -85,10 +85,10 @@ final class AuthController extends Controller
                     ->setReturnType(Model\User::class)
                     ->execute();
 
-                $tokenCache = new TokenCache();
-                $tokenCache->storeTokens($accessToken, $user);
+                $tokenCache = new TokenCache(null, $accessToken, $user);
+                $tokenCache->storeTokens();
 
-                UserAuthEvent::dispatch(['user' => $user]);
+                UserAuthEvent::dispatch($tokenCache);
 
                 return redirect('/');
             }

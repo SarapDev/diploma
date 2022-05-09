@@ -9,11 +9,15 @@ use Microsoft\Graph\Graph;
 
 trait GetGraphTrait
 {
-    private function getGraph(): Graph
+    private function getGraph(TokenCache $tokenCache = null): Graph
     {
-        // Get the access token from the cache
-        $tokenCache = new TokenCache();
-        $accessToken = $tokenCache->getAccessToken();
+        if (is_null($tokenCache)) {
+            // Get the access token from the cache
+            $tokenCache = new TokenCache();
+            $accessToken = $tokenCache->getAccessToken();
+        } else {
+            $accessToken = $tokenCache->getToken();
+        }
 
         // Create a Graph client
         $graph = new Graph();

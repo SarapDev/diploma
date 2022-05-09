@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Handlers;
 
+use App\Services\TokenCache;
 use App\Traits\GetGraphTrait;
 use Carbon\Carbon;
 use GuzzleHttp\Exception\GuzzleException;
@@ -17,9 +18,9 @@ final class AttendanceRecordHandler
 {
     use GetGraphTrait;
 
-    public function handle(string $eventId): array
+    public function handle(string $eventId, TokenCache $tokenCache = null): array
     {
-        $graph = $this->getGraph();
+        $graph = $this->getGraph($tokenCache);
         try {
             $event =  $graph->createRequest('GET', '/me/events/' . $eventId)
                 ->setReturnType(Event::class)

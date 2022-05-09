@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
+            $table->text('event_id');
             $table->string('title');
             $table->dateTime('from');
             $table->dateTime('to');

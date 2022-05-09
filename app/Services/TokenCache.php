@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Illuminate\Support\Facades\Session;
+use JetBrains\PhpStorm\ArrayShape;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessTokenInterface;
@@ -12,15 +13,65 @@ use Microsoft\Graph\Model\User;
 
 final class TokenCache
 {
-    public function storeTokens(AccessTokenInterface $accessToken, User $user): void
+    private ?string $accessToken;
+    private ?string $refreshToken;
+    private ?int $tokenExpires;
+    private ?string $userName;
+    private ?string $userEmail;
+    private ?string $userTimeZone;
+
+    public function __construct(
+        array $arrayData = null,
+        AccessTokenInterface $accessToken = null,
+        User $user = null,
+    ) {
+        if (!is_null($arrayData)) {
+            $this->accessToken = $arrayData['accessToken'];
+            $this->refreshToken = $arrayData['refreshToken'];
+            $this->tokenExpires = $arrayData['tokenExpires'];
+            $this->userName = $arrayData['userName'];
+            $this->userEmail = $arrayData['userEmail'];
+            $this->userTimeZone = $arrayData['userTimeZone'];
+        }
+
+        if (!is_null($accessToken) && !is_null($user)) {
+            $this->accessToken = $accessToken->getToken();
+            $this->refreshToken = $accessToken->getRefreshToken();
+            $this->tokenExpires = $accessToken->getExpires();
+            $this->userName = $user->getDisplayName();
+            $this->userEmail = null !== $user->getMail() ? $user->getMail() : $user->getUserPrincipalName();
+            $this->userTimeZone = $user->getMailboxSettings()->getTimeZone();
+        }
+    }
+
+    #[ArrayShape([
+        'accessToken' => "null|string",
+        'refreshToken' => "null|string",
+        'tokenExpires' => "int|null",
+        'userName' => "null|string",
+        'userEmail' => "null|string",
+        'userTimeZone' => "null|string"])]
+    public function toArray(): array
+    {
+        return [
+            'accessToken'   => $this->accessToken,
+            'refreshToken'  => $this->refreshToken,
+            'tokenExpires'  => $this->tokenExpires,
+            'userName'      => $this->userName,
+            'userEmail'     => $this->userEmail,
+            'userTimeZone'  => $this->userTimeZone,
+        ];
+    }
+
+    public function storeTokens(): void
     {
         session([
-            'accessToken' => $accessToken->getToken(),
-            'refreshToken' => $accessToken->getRefreshToken(),
-            'tokenExpires' => $accessToken->getExpires(),
-            'userName' => $user->getDisplayName(),
-            'userEmail' => null !== $user->getMail() ? $user->getMail() : $user->getUserPrincipalName(),
-            'userTimeZone' => $user->getMailboxSettings()->getTimeZone()
+            'accessToken' => $this->accessToken,
+            'refreshToken' => $this->refreshToken,
+            'tokenExpires' => $this->tokenExpires,
+            'userName' => $this->userName,
+            'userEmail' => $this->userEmail,
+            'userTimeZone' => $this->userTimeZone
         ]);
     }
 
@@ -41,6 +92,11 @@ final class TokenCache
             'refreshToken' => $accessToken->getRefreshToken(),
             'tokenExpires' => $accessToken->getExpires()
         ]);
+    }
+
+    public function getToken(): string
+    {
+        return $this->accessToken;
     }
 
     public function getAccessToken(): Session|string

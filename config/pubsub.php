@@ -1,7 +1,5 @@
 <?php
 
-use App\Listeners\UserAuthListener;
-
 return [
     'tables' => [
         'events' => 'pubsub_events',
@@ -11,7 +9,7 @@ return [
         'UserAuth' => [
             'durable' => true,
             'listeners' => [
-                UserAuthListener::class
+                \App\Listeners\UserAuthListener::class
             ],
         ],
     ],
