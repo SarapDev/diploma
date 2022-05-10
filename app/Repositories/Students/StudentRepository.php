@@ -18,15 +18,6 @@ final class StudentRepository implements IStudentRepository
         }
     }
 
-    public function saveStudentClass(array $data): void
-    {
-        try {
-            DB::table('student_class')->insert($data);
-        } catch (\Exception $e) {
-            dd($e);
-        }
-    }
-
     public function getAllStudentsByNamesArray(array $names): array
     {
         return Student::whereIn('fullname', $names)->get()->toArray();

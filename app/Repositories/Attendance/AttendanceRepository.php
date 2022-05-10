@@ -10,6 +10,10 @@ final class AttendanceRepository implements IAttendanceRepository
 {
     public function butchCreate(array $attendance): void
     {
-        Attendance::insert($attendance);
+        try {
+            Attendance::insert($attendance);
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
     }
 }

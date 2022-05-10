@@ -10,7 +10,6 @@ use App\Repositories\Attendance\IAttendanceRepository;
 use App\Repositories\Classes\IClassRepository;
 use App\Repositories\Students\IStudentRepository;
 use App\Services\TokenCache;
-use Illuminate\Support\Facades\DB;
 
 final class UserAuthListener
 {
@@ -35,7 +34,7 @@ final class UserAuthListener
         }
 
         $this->classRepository->butchCreate($eventDiff);
-        $classes = $this->classRepository->getClassesByEventIds($this->getEventIds($eventDiff));
+        $classes = $this->classRepository->getClassesByEventIds($this->getAttribute($eventDiff, 'event_id'));
 
         foreach ($classes as $class) {
             $report = $this->attendanceRecordHandler->handle($class['event_id'], $token);
@@ -44,15 +43,15 @@ final class UserAuthListener
             $studentsDiff = $this->checkForStudentExist($preparedData);
 
             $this->studentRepository->butchCreate($studentsDiff);
-            $students = $this->studentRepository->getAllStudentsByNamesArray($this->getStudentNames($studentsDiff));
 
-
+            $students = $this->studentRepository->getAllStudentsByNamesArray($this->getAttribute($preparedData, 'fullname'));
+            $this->attendanceRepository->butchCreate($this->prepareAttendanceDataToSave($class, $students));
         }
     }
 
     private function checkForExistEvent(array $events): array
     {
-        $eventsFromDb = $this->classRepository->getClassesByEventIds($this->getEventIds($events));
+        $eventsFromDb = $this->classRepository->getClassesByEventIds($this->getAttribute($events, 'event_id'));
 
         $eventsFromDb = array_map(function ($item) {
             unset($item['id']);
@@ -67,23 +66,12 @@ final class UserAuthListener
         });
     }
 
-    private function getEventIds(array $events): array
+    private function getAttribute(array $data, string $attribute): array
     {
         $res = [];
 
-        foreach ($events as $event) {
-            $res[] = $event['event_id'];
-        }
-
-        return $res;
-    }
-
-    private function getStudentNames(array $students): array
-    {
-        $res = [];
-
-        foreach ($students as $student) {
-            $res[] = $student['fullname'];
+        foreach ($data as $item) {
+            $res[] = $item[$attribute];
         }
 
         return $res;
@@ -101,7 +89,7 @@ final class UserAuthListener
 
     private function checkForStudentExist(array $students): array
     {
-        $studentsFromDb = $this->studentRepository->getAllStudentsByNamesArray($this->getStudentNames($students));
+        $studentsFromDb = $this->studentRepository->getAllStudentsByNamesArray($this->getAttribute($students, 'fullname'));
 
         return array_udiff($students, $studentsFromDb, function ($first, $second) {
             if ($first['fullname'] == $second['fullname']) {
@@ -109,5 +97,19 @@ final class UserAuthListener
             }
             return -1;
         });
+    }
+
+    private function prepareAttendanceDataToSave(array $class, array $students): array
+    {
+        $res = [];
+
+        foreach ($students as $key => $student) {
+            $res[$key]['class_id'] = $class['id'];
+            $res[$key]['student_id'] = $student['id'];
+            $res[$key]['join_time'] = $class['from'];
+            $res[$key]['leave_time'] = $class['to'];
+        }
+
+        return $res;
     }
 }
