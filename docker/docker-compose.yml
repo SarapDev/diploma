@@ -1,53 +1,105 @@
 version: '3'
 
+x-redash-service: &redash-service
+    image: redash/redash:8.0.0.b32245
+    depends_on:
+        - database
+        - redis
+    env_file: ./.env
+    restart: always
 services:
-  nginx:
-    container_name: ${APP_NAME}_nginx
-    image: nginx:alpine
-    volumes:
-      - ../:/var/www:delegated
-      - ./nginx/:/etc/nginx/conf.d:delegated
-      - ./nginx/vhosts:/etc/nginx/vhosts:delegated
-      - ./nginx/logs:/var/log/nginx:delegated
-    ports:
-      - 80:80
-    depends_on:
-      - php-fpm
+    server:
+        <<: *redash-service
+        command: server
+        ports:
+            - "5000:5000"
+        environment:
+            REDASH_REDIS_URL: "redis://redis:6379/0"
+            REDASH_DATABASE_URL: ${REDASH_DB_URL}
+            REDASH_WEB_WORKERS: 4
 
-  php-fpm:
-    container_name: ${APP_NAME}_php_fpm
-    build:
-      context: php-fpm
-      dockerfile: Dockerfile
-    volumes:
-      - ../:/var/www:delegated
-      - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/40-custom.ini:delegated
-      - ~/.ssh:/home/www-data/.ssh:delegated
-    environment:
-      - CONTAINER_ROLE=php-fpm
-    depends_on:
-      - database
+    scheduler:
+        <<: *redash-service
+        command: scheduler
+        environment:
+            QUEUES: "celery"
+            REDASH_REDIS_URL: "redis://redis:6379/0"
+            REDASH_DATABASE_URL: ${REDASH_DB_URL}
+            WORKERS_COUNT: 1
 
-  database:
-    container_name: ${APP_NAME}_postgres
-    image: postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      PGDATA: /data/postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
+    scheduled_worker:
+        <<: *redash-service
+        command: worker
+        environment:
+            REDASH_REDIS_URL: "redis://redis:6379/0"
+            REDASH_DATABASE_URL: ${REDASH_DB_URL}
+            QUEUES: "scheduled_queries,schemas"
+            WORKERS_COUNT: 1
 
-  rabbitmq:
-      image: rabbitmq:3.9-management
-      ports:
-          - 5672:5672
-          - 15672:15672
-      volumes:
-          - rabbitmq_data:/var/lib/rabbitmq/
-          - rabbitmq_log:/var/log/rabbitmq/
+    adhoc_worker:
+        <<: *redash-service
+        command: worker
+        environment:
+            REDASH_REDIS_URL: "redis://redis:6379/0"
+            REDASH_DATABASE_URL: ${REDASH_DB_URL}
+            QUEUES: "queries"
+            WORKERS_COUNT: 2
+
+    redis:
+        image: redis:5.0-alpine
+        restart: always
+
+    nginx:
+        container_name: ${APP_NAME}_nginx
+        image: nginx:alpine
+        volumes:
+            - ../:/var/www:delegated
+            - ./nginx/:/etc/nginx/conf.d:delegated
+            - ./nginx/vhosts:/etc/nginx/vhosts:delegated
+            - ./nginx/logs:/var/log/nginx:delegated
+        links:
+            - server:redash
+        ports:
+            - 80:80
+            - 82:82
+        depends_on:
+            - server
+            - php-fpm
+
+    php-fpm:
+        container_name: ${APP_NAME}_php_fpm
+        build:
+            context: php-fpm
+            dockerfile: Dockerfile
+        volumes:
+            - ../:/var/www:delegated
+            - ./php-fpm/php.ini:/usr/local/etc/php/conf.d/40-custom.ini:delegated
+            - ~/.ssh:/home/www-data/.ssh:delegated
+        environment:
+            - CONTAINER_ROLE=php-fpm
+        depends_on:
+            - database
+
+    database:
+        container_name: ${APP_NAME}_postgres
+        image: postgres
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-postgres}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - 5432:5432
+
+    rabbitmq:
+        image: rabbitmq:3.9-management
+        ports:
+            - 5672:5672
+            - 15672:15672
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq/
+            - rabbitmq_log:/var/log/rabbitmq/
 
 volumes:
     rabbitmq_data:

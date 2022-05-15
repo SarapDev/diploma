@@ -21,6 +21,7 @@ final class AttendanceRecordHandler
     public function handle(string $eventId, TokenCache $tokenCache = null): array
     {
         $graph = $this->getGraph($tokenCache);
+
         try {
             $event =  $graph->createRequest('GET', '/me/events/' . $eventId)
                 ->setReturnType(Event::class)
@@ -32,19 +33,22 @@ final class AttendanceRecordHandler
                 ->setReturnType(OnlineMeeting::class)
                 ->execute();
 
-
             $attendance = $graph->createRequest('GET', '/me/onlineMeetings/'.$meeting[0]->getId().'/attendanceReports')
                 ->setReturnType(MeetingAttendanceReport::class)
                 ->execute();
 
-            $report = $graph->createRequest('GET', '/me/onlineMeetings/'. $meeting[0]->getId() .'/attendanceReports/'. $attendance[0]->getId() .'/attendanceRecords')
-                ->setReturnType(AttendanceRecord::class)
-                ->execute();
+            $report = [];
+            foreach ($attendance as $item) {
+                $res = $graph->createRequest('GET', '/me/onlineMeetings/'. $meeting[0]->getId() .'/attendanceReports/'. $item->getId() .'/attendanceRecords')
+                    ->setReturnType(AttendanceRecord::class)
+                    ->execute();
+                $report = array_merge($report, $res);
+            }
 
             return $this->toArray($report, $event);
 
         } catch (GraphException|GuzzleException $e) {
-            report($e);
+            dd($e);
             return [];
         }
     }
