@@ -24,29 +24,34 @@ final class UserAuthListener
 
     public function handle(array $tokenCache): void
     {
-        $token = new TokenCache($tokenCache);
+        try {
+            $token = new TokenCache($tokenCache);
 
-        $events = $this->attendanceHandler->handle($token);
-        $eventDiff = $this->checkForExistEvent($events);
+            $events = $this->attendanceHandler->handle($token);
+            $eventDiff = $this->checkForExistEvent($events);
 
-        if(empty($eventDiff)) {
-            return;
+            if(empty($eventDiff)) {
+                return;
+            }
+
+            $this->classRepository->butchCreate($eventDiff);
+            $classes = $this->classRepository->getClassesByEventIds($this->getAttribute($eventDiff, 'event_id'));
+
+            foreach ($classes as $class) {
+                $report = $this->attendanceRecordHandler->handle($class['event_id'], $token);
+
+                $preparedData = $this->prepareStudentDataToSave($report);
+                $studentsDiff = $this->checkForStudentExist($preparedData);
+
+                $this->studentRepository->butchCreate($studentsDiff);
+
+                $students = $this->studentRepository->getAllStudentsByNamesArray($this->getAttribute($preparedData, 'fullname'));
+                $this->attendanceRepository->butchCreate($this->prepareAttendanceDataToSave($class, $students, $report));
+            }
+        } catch (\Exception $e) {
+            dd($e->getMessage(), $e->getFile(), $e->getLine());
         }
 
-        $this->classRepository->butchCreate($eventDiff);
-        $classes = $this->classRepository->getClassesByEventIds($this->getAttribute($eventDiff, 'event_id'));
-
-        foreach ($classes as $class) {
-            $report = $this->attendanceRecordHandler->handle($class['event_id'], $token);
-
-            $preparedData = $this->prepareStudentDataToSave($report);
-            $studentsDiff = $this->checkForStudentExist($preparedData);
-
-            $this->studentRepository->butchCreate($studentsDiff);
-
-            $students = $this->studentRepository->getAllStudentsByNamesArray($this->getAttribute($preparedData, 'fullname'));
-            $this->attendanceRepository->butchCreate($this->prepareAttendanceDataToSave($class, $students));
-        }
     }
 
     private function checkForExistEvent(array $events): array
@@ -99,15 +104,15 @@ final class UserAuthListener
         });
     }
 
-    private function prepareAttendanceDataToSave(array $class, array $students): array
+    private function prepareAttendanceDataToSave(array $class, array $students, array $report): array
     {
         $res = [];
 
-        foreach ($students as $key => $student) {
-            $res[$key]['class_id'] = $class['id'];
-            $res[$key]['student_id'] = $student['id'];
-            $res[$key]['join_time'] = $class['from'];
-            $res[$key]['leave_time'] = $class['to'];
+        for ($i = 0; $i < count($students); $i++) {
+            $res[$i]['class_id']    = $class['id'];
+            $res[$i]['student_id']  = $students[$i]['id'];
+            $res[$i]['join_time']   = $report['report'][$i]['join'];
+            $res[$i]['leave_time']  = $report['report'][$i]['leave'];
         }
 
         return $res;

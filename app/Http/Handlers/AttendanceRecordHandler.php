@@ -37,13 +37,9 @@ final class AttendanceRecordHandler
                 ->setReturnType(MeetingAttendanceReport::class)
                 ->execute();
 
-            $report = [];
-            foreach ($attendance as $item) {
-                $res = $graph->createRequest('GET', '/me/onlineMeetings/'. $meeting[0]->getId() .'/attendanceReports/'. $item->getId() .'/attendanceRecords')
-                    ->setReturnType(AttendanceRecord::class)
-                    ->execute();
-                $report = array_merge($report, $res);
-            }
+            $report = $graph->createRequest('GET', '/me/onlineMeetings/'. $meeting[0]->getId() .'/attendanceReports/'. $attendance[0]->getId() .'/attendanceRecords')
+                ->setReturnType(AttendanceRecord::class)
+                ->execute();
 
             return $this->toArray($report, $event);
 

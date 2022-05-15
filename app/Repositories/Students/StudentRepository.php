@@ -20,6 +20,10 @@ final class StudentRepository implements IStudentRepository
 
     public function getAllStudentsByNamesArray(array $names): array
     {
-        return Student::whereIn('fullname', $names)->get()->toArray();
+        try {
+            return Student::whereIn('fullname', $names)->get()->toArray();
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
     }
 }
